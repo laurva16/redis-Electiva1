@@ -6,8 +6,10 @@
   "scripts": {
     "start": "node server/server.js",
     "publisher": "node publisher/publisher.js",
+    "publisher:github": "node publisher/publisher.js --github",
     "processor": "node processor/processor.js",
-    "dev": "concurrently \"npm:publisher\" \"npm:processor\" \"npm:start\""
+    "dev": "concurrently \"npm:publisher\" \"npm:processor\" \"npm:start\"",
+    "dev:github": "concurrently \"npm:publisher:github\" \"npm:processor\" \"npm:start\""
   },
   "dependencies": {
     "express": "^4.19.2",

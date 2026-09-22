@@ -48,12 +48,22 @@ npm install
 
 ## Ejecución
 
-Se necesitan **3 procesos** corriendo a la vez (en 3 terminales, o con
-`npm run dev` si instalas `concurrently`):
-
+### Opción 1: Todo en uno con un solo comando (Recomendado)
 ```bash
-# Terminal 1 — Publisher (simulador + publicación en Redis)
+# Modo Simulado (microservicios estocásticos):
+npm run dev
+
+# O Modo Real directo (API pública de GitHub Status en vivo):
+npm run dev:github
+```
+
+> **💡 Conmutador en tiempo real:** Incluso una vez iniciado el proyecto en cualquiera de los dos modos, puedes alternar entre el **Simulador** y la **API de GitHub** con un solo clic directamente desde el botón en el encabezado del Dashboard. Redis sincroniza el cambio de fuente en caliente entre el servidor y el Publisher vía Pub/Sub (`system:config`).
+
+### Opción 2: En 3 terminales independientes
+```bash
+# Terminal 1 — Publisher (Simulador o con --github para API real)
 npm run publisher
+# (o: npm run publisher:github)
 
 # Terminal 2 — Processor/Subscriber (métricas y alertas)
 npm run processor

@@ -3,106 +3,763 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Monitoreo de Aplicaciones y Servicios — Grupo 3</title>
+<title>PULSE · Observabilidad y Monitoreo de Servicios — Grupo 3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <style>
-  :root{
-    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b;
-    --text:#e8eaed; --muted:#9aa3af; --border:#2a2f3a;
-    --ok:#3ddc97; --warn:#f5b942; --crit:#ff5c5c; --accent:#5b8cff;
+  :root {
+    --bg-base: #070a13;
+    --bg-surface: rgba(13, 19, 36, 0.78);
+    --bg-surface-solid: #0c1222;
+    --bg-card: rgba(18, 26, 50, 0.7);
+    --bg-card-hover: rgba(27, 39, 74, 0.9);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(99, 102, 241, 0.45);
+    --border-glow: rgba(99, 102, 241, 0.25);
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-sub: #64748b;
+    --accent: #6366f1;
+    --accent-light: #818cf8;
+    --accent-glow: rgba(99, 102, 241, 0.45);
+    --cyan: #06b6d4;
+    --cyan-glow: rgba(6, 182, 212, 0.4);
+    --ok: #10b981;
+    --ok-glow: rgba(16, 185, 129, 0.35);
+    --warn: #f59e0b;
+    --warn-glow: rgba(245, 158, 11, 0.35);
+    --crit: #f43f5e;
+    --crit-glow: rgba(244, 63, 94, 0.45);
   }
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);}
-  header{padding:20px 28px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
-  header h1{margin:0;font-size:20px;}
-  header .status{font-size:13px;color:var(--muted);}
-  #connDot{width:9px;height:9px;border-radius:50%;background:var(--crit);display:inline-block;margin-right:6px;}
-  #connDot.on{background:var(--ok);}
 
-  main{padding:24px 28px;max-width:1400px;margin:0 auto;}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px;}
-  .kpi{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
-  .kpi .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
-  .kpi .value{font-size:26px;font-weight:600;margin-top:6px;}
-  .kpi .sub{font-size:12px;color:var(--muted);margin-top:4px;}
+  body {
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-base);
+    background-image: 
+      radial-gradient(at 50% 0%, rgba(99, 102, 241, 0.14) 0px, transparent 55%),
+      radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
+    background-attachment: fixed;
+    color: var(--text-main);
+    min-height: 100vh;
+    padding-bottom: 40px;
+    -webkit-font-smoothing: antialiased;
+  }
 
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px;}
-  @media (max-width:900px){.grid2{grid-template-columns:1fr;}}
+  /* Custom Slim Scrollbars */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent-light); }
 
-  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;}
-  .panel h2{margin:0 0 14px;font-size:15px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  /* Header */
+  header {
+    background: rgba(8, 12, 24, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 36px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand-logo-badge {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 20px var(--accent-glow);
+    font-size: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+  }
+  .brand-logo-badge::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 60%);
+  }
+  .brand-title-wrap h1 {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand-title-wrap .title-tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(99, 102, 241, 0.18);
+    color: var(--accent-light);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .brand-title-wrap .subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+  }
+  .brand-title-wrap .subtitle a {
+    color: var(--cyan);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all .2s;
+  }
+  .brand-title-wrap .subtitle a:hover {
+    color: #fff;
+    text-shadow: 0 0 8px var(--cyan-glow);
+  }
 
-  table{width:100%;border-collapse:collapse;font-size:13px;}
-  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--border);}
-  th{color:var(--muted);font-weight:500;}
-  .badge{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
-  .badge.OK{background:rgba(61,220,151,.15);color:var(--ok);}
-  .badge.WARNING{background:rgba(245,185,66,.15);color:var(--warn);}
-  .badge.CRITICAL{background:rgba(255,92,92,.15);color:var(--crit);}
+  .header-actions { display: flex; align-items: center; gap: 14px; }
+  
+  /* Segmented Mode Switcher */
+  .mode-switch-container {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 3px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+  }
+  .mode-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
+    cursor: pointer;
+    transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .mode-btn:hover { color: #fff; }
+  .mode-btn.active.sim {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: #fff;
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+  .mode-btn.active.gh {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #042113;
+    font-weight: 700;
+    box-shadow: 0 0 16px var(--ok-glow);
+  }
 
-  #topology{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;padding:10px 0;}
-  .node{border:2px solid var(--border);border-radius:10px;padding:14px 18px;text-align:center;min-width:110px;background:var(--panel2);}
-  .node .name{font-weight:600;font-size:13px;}
-  .node .metric{font-size:11px;color:var(--muted);margin-top:4px;}
-  .node.OK{border-color:var(--ok);}
-  .node.WARNING{border-color:var(--warn);}
-  .node.CRITICAL{border-color:var(--crit);animation:pulse 1.2s infinite;}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,92,92,.5);}70%{box-shadow:0 0 0 8px rgba(255,92,92,0);}100%{box-shadow:0 0 0 0 rgba(255,92,92,0);}}
+  .status-pill {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+  .status-radar {
+    position: relative;
+    width: 8px; height: 8px;
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--crit);
+    position: absolute;
+    inset: 0;
+  }
+  .status-dot.on {
+    background: var(--ok);
+    box-shadow: 0 0 10px var(--ok-glow);
+  }
+  .status-dot.on::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1px solid var(--ok);
+    opacity: 0.6;
+    animation: radarRipple 2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+  }
+  @keyframes radarRipple {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(2.8); opacity: 0; }
+  }
 
-  #alerts{max-height:260px;overflow-y:auto;}
-  .alert{padding:8px 10px;border-radius:8px;margin-bottom:6px;font-size:13px;border-left:3px solid var(--warn);background:var(--panel2);}
-  .alert.CRITICAL{border-left-color:var(--crit);}
-  .alert .time{color:var(--muted);font-size:11px;margin-left:6px;}
-  canvas{max-height:260px;}
+  /* Main Container */
+  main { max-width: 1440px; margin: 0 auto; padding: 24px 36px; }
+
+  /* KPI Grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--bg-surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+    box-shadow: 0 10px 25px -10px rgba(0,0,0,0.4);
+  }
+  .kpi-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--border-hover);
+    box-shadow: 0 14px 30px -10px var(--border-glow);
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--cyan));
+    opacity: 0.9;
+  }
+  .kpi-card.ok-accent::before { background: linear-gradient(90deg, var(--ok), #34d399); }
+  .kpi-card.warn-accent::before { background: linear-gradient(90deg, var(--warn), #fbbf24); }
+
+  .kpi-top { display: flex; justify-content: space-between; align-items: center; }
+  .kpi-title { font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em; color: var(--text-muted); }
+  .kpi-icon-chip {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 27px; font-weight: 700; margin: 8px 0 2px; color: #fff; }
+  .kpi-sub { font-size: 12px; color: var(--text-sub); }
+
+  /* Panels Common */
+  .panel {
+    background: var(--bg-surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    box-shadow: 0 14px 35px -12px rgba(0,0,0,0.55);
+  }
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .panel-title .dot-indicator {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent-light);
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  /* View Switcher Controls (Tabs) */
+  .view-switch {
+    display: flex;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .view-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
+    cursor: pointer;
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .view-btn:hover { color: #fff; }
+  .view-btn.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+
+  /* Charts Grid */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 1024px) { .grid-2 { grid-template-columns: 1fr; } }
+  .chart-container { position: relative; height: 260px; width: 100%; }
+
+  /* Pill indicator inside chart header */
+  .sla-pill {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.02em;
+  }
+  .sla-pill.ok { background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .sla-pill.warn { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .sla-pill.crit { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35); }
+
+  /* -------------------------------------------------------------
+     Symmetrical Equal-Height Bottom Grid (Exact Height: 540px)
+     ------------------------------------------------------------- */
+  .grid-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: stretch;
+  }
+  @media (max-width: 1024px) { .grid-bottom { grid-template-columns: 1fr; } }
+
+  .sync-panel {
+    height: 540px;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 14px 35px -12px rgba(0,0,0,0.55);
+    padding: 0;
+  }
+  .sync-panel-header {
+    padding: 14px 20px;
+    background: rgba(10, 15, 29, 0.7);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .sync-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    position: relative;
+  }
+
+  /* Vista 1: Malla Visual de Tarjetas de Salud */
+  .services-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+    gap: 12px;
+  }
+  .service-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 13px 15px;
+    transition: all .25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+  }
+  .service-card:hover {
+    border-color: rgba(99, 102, 241, 0.35);
+    transform: translateY(-2px);
+    background: var(--bg-card-hover);
+    box-shadow: 0 8px 20px -6px rgba(0,0,0,0.4);
+  }
+  .svc-top { display: flex; justify-content: space-between; align-items: center; }
+  .svc-name { font-weight: 700; font-size: 13px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  
+  .svc-status-tag {
+    font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 12px;
+    display: flex; align-items: center; gap: 4px; letter-spacing: 0.04em;
+  }
+  .svc-status-tag.OK { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .svc-status-tag.WARNING { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .svc-status-tag.CRITICAL { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35); }
+
+  .svc-metric-row { display: flex; justify-content: space-between; align-items: baseline; }
+  .svc-latency-val { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 700; color: #fff; }
+  .svc-sla-badge { font-size: 10px; color: var(--text-sub); }
+
+  /* Micro-barra de progreso hacia umbral SLA 300ms */
+  .svc-sla-meter { width: 100%; height: 5px; background: rgba(255, 255, 255, 0.06); border-radius: 3px; overflow: hidden; }
+  .svc-sla-meter-fill { height: 100%; background: var(--ok); border-radius: 3px; transition: width .4s ease, background .4s; }
+  .svc-sla-meter-fill.warn { background: var(--warn); }
+  .svc-sla-meter-fill.crit { background: var(--crit); }
+
+  .svc-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--text-muted);
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .svc-tag {
+    background: rgba(255, 255, 255, 0.04);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+  }
+
+  /* Vista 2: Tabla Detallada */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg-surface-solid);
+    z-index: 10;
+  }
+  td {
+    padding: 10px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-size: 13px;
+    color: var(--text-main);
+  }
+  tr:hover td { background: rgba(255, 255, 255, 0.025); }
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+  .badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    display: inline-block;
+  }
+  .badge.OK { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .badge.WARNING { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .badge.CRITICAL { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35); }
+
+  /* Feed de Alertas */
+  .alert-card {
+    background: rgba(17, 26, 50, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-left: 4px solid var(--warn);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: transform .2s ease, background .2s ease;
+  }
+  .alert-card:hover { transform: translateX(3px); background: rgba(25, 37, 70, 0.8); }
+  .alert-card.CRITICAL { border-left-color: var(--crit); background: rgba(244, 63, 94, 0.08); }
+  .alert-card.CRITICAL:hover { background: rgba(244, 63, 94, 0.13); }
+  .alert-header { display: flex; justify-content: space-between; align-items: center; }
+  .alert-type { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: #fff; }
+  .alert-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-sub); }
+  .alert-msg { font-size: 13px; color: var(--text-main); }
+
+  .empty-state {
+    height: 100%;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--text-muted);
+    font-size: 13px;
+    gap: 10px;
+  }
+  .empty-icon-halo {
+    width: 54px; height: 54px; border-radius: 50%;
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 0 20px var(--ok-glow);
+  }
+
+  .spinner {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 3px solid rgba(99, 102, 241, 0.15);
+    border-top-color: var(--accent-light);
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  /* Action buttons in alert header */
+  .btn-mini {
+    background: rgba(244, 63, 94, 0.12);
+    color: #fb7185;
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
+    cursor: pointer;
+    transition: all .2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn-mini:hover { background: var(--crit); color: #fff; box-shadow: 0 0 12px var(--crit-glow); }
+  
+  .btn-mini-sub {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-mini-sub:hover { color: #fff; background: rgba(255, 255, 255, 0.09); }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🩺 Monitoreo de Aplicaciones y Servicios — Grupo 3</h1>
-  <div class="status"><span id="connDot"></span><span id="connText">Conectando...</span></div>
+  <div class="brand">
+    <div class="brand-logo-badge">⚡</div>
+    <div class="brand-title-wrap">
+      <h1>
+        PULSE · Observabilidad de Servicios
+        <span class="title-tag">GRUPO 3</span>
+      </h1>
+      <div class="subtitle">
+        <span>Redis In-Memory Engine</span>
+        <span>·</span>
+        <a href="/api/github/raw" target="_blank">[Auditoría API en vivo]</a>
+        <span>·</span>
+        <a href="https://www.githubstatus.com" target="_blank">[githubstatus.com]</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <!-- Selector Dinámico de Modo -->
+    <div class="mode-switch-container">
+      <button id="btnSimulator" class="mode-btn active sim" onclick="switchSource('simulator')">
+        ⚙️ Modo Simulador
+      </button>
+      <button id="btnGithub" class="mode-btn" onclick="switchSource('github')">
+        🌐 GitHub API (Real)
+      </button>
+    </div>
+
+    <!-- Indicador de Conexión en Tiempo Real -->
+    <div class="status-pill">
+      <div class="status-radar">
+        <div id="connDot" class="status-dot"></div>
+      </div>
+      <span id="connText">Conectando...</span>
+    </div>
+  </div>
 </header>
 
 <main>
 
-  <section class="kpis" id="kpis">
-    <div class="kpi"><div class="label">Latencia promedio</div><div class="value" id="kpiLatency">–</div><div class="sub">ms</div></div>
-    <div class="kpi"><div class="label">% Errores promedio</div><div class="value" id="kpiError">–</div><div class="sub">%</div></div>
-    <div class="kpi"><div class="label">Solicitudes/seg</div><div class="value" id="kpiRps">–</div><div class="sub">promedio global</div></div>
-    <div class="kpi"><div class="label">Disponibilidad</div><div class="value" id="kpiAvail">–</div><div class="sub">servicios OK</div></div>
-    <div class="kpi"><div class="label">Mayor latencia</div><div class="value" id="kpiWorst">–</div><div class="sub" id="kpiWorstMs"></div></div>
+  <!-- Fila de KPIs Principales -->
+  <section class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-title" id="kpiLatencyLabel">Latencia Promedio Global</div>
+        <div class="kpi-icon-chip">⏱️</div>
+      </div>
+      <div class="kpi-value" id="kpiLatency">–</div>
+      <div class="kpi-sub" id="kpiLatencySub">ms (Round-Trip en Tiempo Real)</div>
+    </div>
+
+    <div class="kpi-card ok-accent">
+      <div class="kpi-top">
+        <div class="kpi-title">Disponibilidad del Ecosistema</div>
+        <div class="kpi-icon-chip">🛡️</div>
+      </div>
+      <div class="kpi-value" id="kpiAvail" style="color:#34d399;">–</div>
+      <div class="kpi-sub">servicios operando normalmente</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-title" id="kpiMetric3Label">Solicitudes / Segundo</div>
+        <div class="kpi-icon-chip">🔄</div>
+      </div>
+      <div class="kpi-value" id="kpiMetric3Value">–</div>
+      <div class="kpi-sub" id="kpiMetric3Sub">tráfico agregado</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-title" id="kpiErrorLabel">% Tasa de Error</div>
+        <div class="kpi-icon-chip">⚠️</div>
+      </div>
+      <div class="kpi-value" id="kpiError">–</div>
+      <div class="kpi-sub" id="kpiErrorSub">promedio global</div>
+    </div>
+
+    <div class="kpi-card warn-accent">
+      <div class="kpi-top">
+        <div class="kpi-title">Componente Más Lento</div>
+        <div class="kpi-icon-chip">🐢</div>
+      </div>
+      <div class="kpi-value" id="kpiWorst" style="font-size:17px;line-height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">–</div>
+      <div class="kpi-sub" id="kpiWorstMs">–</div>
+    </div>
   </section>
 
-  <section class="panel" style="margin-bottom:24px;">
-    <h2>Topología de servicios (estado actual)</h2>
-    <div id="topology"></div>
+  <!-- Sección de Gráficas -->
+  <section class="grid-2">
+    <!-- Gráfica 1: Latencia Temporal con Zonas SLA y Umbral Visual -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">
+            <span class="dot-indicator"></span>
+            Tendencia de Latencia Global (ms)
+          </div>
+          <div style="font-size:11px;color:var(--text-sub);margin-top:2px;">Evolución temporal con umbral de tolerancia SLA</div>
+        </div>
+        <div id="slaStatusBadge" class="sla-pill ok">🟢 SLA Óptimo (&lt; 300ms)</div>
+      </div>
+      <div class="chart-container">
+        <canvas id="chartLatency"></canvas>
+      </div>
+    </div>
+
+    <!-- Gráfica 2: Comparativa Dinámica (Ranking en Barras Horizontales ↔ Multilínea) -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title" id="chart2Title">
+            <span class="dot-indicator" style="background:var(--cyan);box-shadow:0 0 8px var(--cyan-glow);"></span>
+            Comparativa de Latencia por Servicio
+          </div>
+          <div style="font-size:11px;color:var(--text-sub);margin-top:2px;" id="chart2Subtitle">Ranking en tiempo real con clasificación de salud</div>
+        </div>
+        <div class="view-switch">
+          <button id="btnChartBars" class="view-btn active" onclick="setChart2Mode('bars')">
+            📊 Ranking de Barras
+          </button>
+          <button id="btnChartLines" class="view-btn" onclick="setChart2Mode('lines')">
+            📈 Tendencia Multilínea
+          </button>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="chartComparison"></canvas>
+      </div>
+    </div>
   </section>
 
-  <section class="grid2">
-    <div class="panel">
-      <h2>Latencia vs. tiempo (promedio global)</h2>
-      <canvas id="chartLatency"></canvas>
-    </div>
-    <div class="panel">
-      <h2>Errores vs. tiempo (% promedio global)</h2>
-      <canvas id="chartErrors"></canvas>
-    </div>
-  </section>
+  <!-- Sección Inferior Sincronizada (Exactamente Misma Altura: 540px) -->
+  <section class="grid-bottom">
 
-  <section class="grid2">
-    <div class="panel">
-      <h2>Estado actual por servicio</h2>
-      <table>
-        <thead><tr><th>Servicio</th><th>Req/s</th><th>Latencia</th><th>Errores</th><th>CPU</th><th>Mem</th><th>Estado</th></tr></thead>
-        <tbody id="stateTableBody"></tbody>
-      </table>
+    <!-- Panel Izquierdo: Estado de Servicios (Malla de Tarjetas ↔ Tabla Detallada) -->
+    <div class="sync-panel">
+      <div class="sync-panel-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="panel-title" style="margin-bottom:0;">
+            <span class="dot-indicator"></span>
+            Estado de Componentes
+          </div>
+          <span id="serviceCountBadge" style="font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.06);border-radius:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">–</span>
+        </div>
+        <div class="view-switch">
+          <button id="btnViewCards" class="view-btn active" onclick="setServiceView('cards')">
+            ⊞ Malla Visual
+          </button>
+          <button id="btnViewTable" class="view-btn" onclick="setServiceView('table')">
+            ☰ Tabla Detallada
+          </button>
+        </div>
+      </div>
+
+      <div class="sync-panel-body">
+        <!-- Vista 1: Malla Visual de Tarjetas -->
+        <div id="servicesCardsView" class="services-cards-grid"></div>
+
+        <!-- Vista 2: Tabla Detallada -->
+        <div id="servicesTableView" style="display:none;">
+          <table>
+            <thead id="stateTableHead">
+              <tr><th>Servicio / Componente</th><th>Req/s</th><th>Latencia</th><th>Errores</th><th>CPU</th><th>Mem</th><th>Estado</th></tr>
+            </thead>
+            <tbody id="stateTableBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    <div class="panel">
-      <h2>Alertas recientes</h2>
-      <div id="alerts"></div>
+
+    <!-- Panel Derecho: Registro de Alertas Recientes (Redis List) -->
+    <div class="sync-panel">
+      <div class="sync-panel-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="panel-title" style="margin-bottom:0;">
+            <span class="dot-indicator" style="background:var(--warn);box-shadow:0 0 8px var(--warn-glow);"></span>
+            Registro de Alertas Recientes
+          </div>
+          <span id="alertsCountBadge" style="font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.06);border-radius:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">0</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="btn-mini" onclick="triggerTestAlert()" title="Paso 6: Provocar condición de alerta y ver reflejo en tiempo real">
+            ⚡ Simular Alerta
+          </button>
+          <button class="btn-mini-sub" onclick="clearAlertsFeed()" title="Limpiar feed local">
+            🧹 Limpiar
+          </button>
+        </div>
+      </div>
+
+      <div id="alerts" class="sync-panel-body"></div>
     </div>
+
   </section>
 
 </main>
@@ -112,20 +769,184 @@ const socket = io();
 const connDot = document.getElementById('connDot');
 const connText = document.getElementById('connText');
 
-socket.on('connect', () => { connDot.classList.add('on'); connText.textContent = 'Tiempo real activo'; });
-socket.on('disconnect', () => { connDot.classList.remove('on'); connText.textContent = 'Desconectado'; });
+// Estado global de servicios
+const stateByService = {};
 
-// ---------- Charts ----------
-const MAX_POINTS = 30;
-const latencyChart = new Chart(document.getElementById('chartLatency'), {
-  type: 'line',
-  data: { labels: [], datasets: [{ label: 'Latencia promedio (ms)', data: [], borderColor: '#5b8cff', backgroundColor: 'rgba(91,140,255,.15)', tension: .3, fill:true }] },
-  options: { responsive:true, animation:false, scales:{ y:{ beginAtZero:true } }, plugins:{legend:{display:false}} }
+socket.on('connect', () => {
+  connDot.classList.add('on');
+  connText.textContent = 'En Línea';
 });
-const errorChart = new Chart(document.getElementById('chartErrors'), {
+socket.on('disconnect', () => {
+  connDot.classList.remove('on');
+  connText.textContent = 'Desconectado';
+});
+
+// ---------- Control Dinámico de Fuente (Simulador <-> GitHub API) ----------
+let currentSource = 'simulator';
+
+function updateSourceUI(src) {
+  currentSource = src;
+  const btnSim = document.getElementById('btnSimulator');
+  const btnGh = document.getElementById('btnGithub');
+
+  if (src === 'github') {
+    btnGh.className = 'mode-btn active gh';
+    btnSim.className = 'mode-btn';
+  } else {
+    btnSim.className = 'mode-btn active sim';
+    btnGh.className = 'mode-btn';
+  }
+  rebuildChart2();
+}
+
+function resetCharts() {
+  latencyChart.data.labels = [];
+  latencyChart.data.datasets[0].data = [];
+  latencyChart.update();
+
+  chart2HistoryLabels = [];
+  chart2HistorySeries = {};
+  rebuildChart2();
+}
+
+async function switchSource(src) {
+  if (src === currentSource) return;
+  updateSourceUI(src);
+  resetCharts();
+  
+  // Mostrar estado de transición elegante
+  const cardsContainer = document.getElementById('servicesCardsView');
+  cardsContainer.innerHTML = `
+    <div class="empty-state" style="grid-column: 1 / -1;">
+      <div class="spinner"></div>
+      <div style="font-weight:600;color:#fff;margin-top:10px;">Conmutando telemetría...</div>
+      <div style="font-size:12px;color:var(--text-sub);">Conectando con ${src === 'github' ? 'GitHub Status API' : 'Simulador de Microservicios'}</div>
+    </div>`;
+
+  for (const k in stateByService) delete stateByService[k];
+  document.getElementById('alerts').innerHTML = '';
+  checkEmptyAlerts();
+
+  try {
+    const res = await fetch('/api/source', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: src })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+  } catch (err) {
+    console.error('Error al cambiar fuente:', err.message);
+  }
+}
+
+socket.on('source-changed', (data) => {
+  if (data.source && data.source !== currentSource) {
+    updateSourceUI(data.source);
+    resetCharts();
+    for (const k in stateByService) delete stateByService[k];
+    document.getElementById('alerts').innerHTML = '';
+    checkEmptyAlerts();
+    renderState();
+  }
+});
+
+// ---------- Conmutador de Vista de Servicios (Malla ↔ Tabla) ----------
+let currentServiceView = 'cards';
+
+function setServiceView(view) {
+  currentServiceView = view;
+  const btnCards = document.getElementById('btnViewCards');
+  const btnTable = document.getElementById('btnViewTable');
+  const cardsContainer = document.getElementById('servicesCardsView');
+  const tableContainer = document.getElementById('servicesTableView');
+
+  if (view === 'cards') {
+    btnCards.classList.add('active');
+    btnTable.classList.remove('active');
+    cardsContainer.style.display = 'grid';
+    tableContainer.style.display = 'none';
+  } else {
+    btnTable.classList.add('active');
+    btnCards.classList.remove('active');
+    cardsContainer.style.display = 'none';
+    tableContainer.style.display = 'block';
+  }
+  renderState();
+}
+
+// ---------- Gráfica 1: Latencia Temporal con Umbral SLA (300ms) ----------
+const MAX_POINTS = 25;
+const latencyCtx = document.getElementById('chartLatency').getContext('2d');
+const latencyGrad = latencyCtx.createLinearGradient(0, 0, 0, 260);
+latencyGrad.addColorStop(0, 'rgba(99, 102, 241, 0.45)');
+latencyGrad.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+// Plugin para dibujar la línea de tolerancia SLA de 300 ms
+const thresholdPlugin = {
+  id: 'thresholdLine',
+  afterDraw: (chart) => {
+    const yAxis = chart.scales.y;
+    if (!yAxis) return;
+    const yPos = yAxis.getPixelForValue(300);
+    if (yPos >= chart.chartArea.top && yPos <= chart.chartArea.bottom) {
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.beginPath();
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = 'rgba(244, 63, 94, 0.85)';
+      ctx.lineWidth = 1.5;
+      ctx.moveTo(chart.chartArea.left, yPos);
+      ctx.lineTo(chart.chartArea.right, yPos);
+      ctx.stroke();
+
+      ctx.fillStyle = '#fb7185';
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText('UMBRAL ALERTA: 300ms', chart.chartArea.right - 10, yPos - 6);
+      ctx.restore();
+    }
+  }
+};
+
+const latencyChart = new Chart(latencyCtx, {
   type: 'line',
-  data: { labels: [], datasets: [{ label: '% Errores promedio', data: [], borderColor: '#ff5c5c', backgroundColor: 'rgba(255,92,92,.15)', tension: .3, fill:true }] },
-  options: { responsive:true, animation:false, scales:{ y:{ beginAtZero:true } }, plugins:{legend:{display:false}} }
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Latencia Promedio Global (ms)',
+      data: [],
+      borderColor: '#818cf8',
+      borderWidth: 2.5,
+      backgroundColor: latencyGrad,
+      fill: true,
+      tension: 0.35,
+      pointRadius: 3,
+      pointBackgroundColor: '#818cf8',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    scales: {
+      y: {
+        beginAtZero: true,
+        suggestedMax: 350,
+        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+        ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 11 } }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } }
+      }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: { backgroundColor: '#0c1222', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1 }
+    }
+  },
+  plugins: [thresholdPlugin]
 });
 
 function pushPoint(chart, label, value) {
@@ -138,80 +959,467 @@ function pushPoint(chart, label, value) {
   chart.update();
 }
 
-// ---------- Metrics / KPIs ----------
+// ---------- Gráfica 2: Modo Conmutable (Ranking Barras Horizontales ↔ Multilínea) ----------
+let chart2Mode = 'bars'; // 'bars' | 'lines'
+let compChart = null;
+let chart2HistoryLabels = [];
+let chart2HistorySeries = {};
+
+function setChart2Mode(mode) {
+  chart2Mode = mode;
+  document.getElementById('btnChartBars').className = mode === 'bars' ? 'view-btn active' : 'view-btn';
+  document.getElementById('btnChartLines').className = mode === 'lines' ? 'view-btn active' : 'view-btn';
+  
+  const sub = document.getElementById('chart2Subtitle');
+  if (mode === 'bars') {
+    sub.textContent = 'Ranking en tiempo real con clasificación de salud y comparación frente al SLA (300ms)';
+  } else {
+    sub.textContent = 'Tendencia temporal continua de los principales componentes activos';
+  }
+  rebuildChart2();
+}
+
+function rebuildChart2() {
+  if (compChart) {
+    compChart.destroy();
+    compChart = null;
+  }
+  const ctx = document.getElementById('chartComparison').getContext('2d');
+
+  if (chart2Mode === 'bars') {
+    // Modo Barras Horizontales: Clasificación Dinámica
+    compChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Latencia Actual (ms)',
+          data: [],
+          backgroundColor: [],
+          borderRadius: 6,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 300 },
+        scales: {
+          x: {
+            beginAtZero: true,
+            suggestedMax: 350,
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { color: '#f8fafc', font: { family: 'Outfit', size: 11, weight: 600 } }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0c1222',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            callbacks: {
+              label: (ctx) => `${ctx.raw} ms (${ctx.raw > 300 ? 'ALERTA > 300ms' : 'Normal'})`
+            }
+          }
+        }
+      }
+    });
+    updateChart2Bars();
+  } else {
+    // Modo Multilínea Temporal
+    const isGh = currentSource === 'github';
+    const seriesDefs = isGh ? [
+      { key: 'git-operations', label: 'Git Operations', color: '#818cf8' },
+      { key: 'api-requests', label: 'API Requests', color: '#34d399' },
+      { key: 'actions', label: 'Actions', color: '#fbbf24' },
+      { key: 'webhooks', label: 'Webhooks', color: '#22d3ee' }
+    ] : [
+      { key: 'api', label: 'api', color: '#818cf8' },
+      { key: 'database', label: 'database', color: '#34d399' },
+      { key: 'payments', label: 'payments', color: '#fbbf24' },
+      { key: 'frontend', label: 'frontend', color: '#22d3ee' }
+    ];
+
+    const datasets = seriesDefs.map(s => ({
+      label: s.label,
+      key: s.key,
+      data: chart2HistorySeries[s.key] ? [...chart2HistorySeries[s.key]] : [],
+      borderColor: s.color,
+      borderWidth: 2,
+      tension: 0.3,
+      pointRadius: 2,
+      fill: false
+    }));
+
+    compChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [...chart2HistoryLabels],
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        scales: {
+          y: {
+            beginAtZero: false,
+            suggestedMax: 350,
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 11 } }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { color: '#94a3b8', boxWidth: 10, font: { family: 'Outfit', size: 11, weight: 600 } }
+          },
+          tooltip: { backgroundColor: '#0c1222', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1 }
+        }
+      }
+    });
+  }
+}
+
+function updateChart2Bars() {
+  if (!compChart || chart2Mode !== 'bars') return;
+  const items = Object.values(stateByService)
+    .map(s => ({
+      name: s.data?.service_name || s.entity_id,
+      lat: Number(s.data?.latency_ms) || 0,
+      status: s.data?.status || 'OK'
+    }))
+    .sort((a,b) => b.lat - a.lat);
+
+  if (items.length > 0) {
+    compChart.data.labels = items.map(i => i.name);
+    compChart.data.datasets[0].data = items.map(i => i.lat);
+    compChart.data.datasets[0].backgroundColor = items.map(i => {
+      if (i.lat > 300 || i.status === 'CRITICAL') return '#f43f5e';
+      if (i.lat > 200 || i.status === 'WARNING') return '#f59e0b';
+      return '#10b981';
+    });
+    compChart.update();
+  }
+}
+
+rebuildChart2();
+
+// ---------- Renderizado de KPIs Generales ----------
 function renderMetrics(m) {
+  if (!m) return;
   document.getElementById('kpiLatency').textContent = m.avg_latency_ms;
-  document.getElementById('kpiError').textContent = m.avg_error_rate;
-  document.getElementById('kpiRps').textContent = m.avg_requests_per_second;
   document.getElementById('kpiAvail').textContent = m.availability_pct + '%';
+
+  // Actualizar Pill de estado SLA en la gráfica
+  const slaBadge = document.getElementById('slaStatusBadge');
+  if (m.avg_latency_ms > 300) {
+    slaBadge.className = 'sla-pill crit';
+    slaBadge.textContent = '🔴 Alerta SLA Excedido (> 300ms)';
+  } else if (m.avg_latency_ms > 200) {
+    slaBadge.className = 'sla-pill warn';
+    slaBadge.textContent = '🟡 Latencia Moderada (200-300ms)';
+  } else {
+    slaBadge.className = 'sla-pill ok';
+    slaBadge.textContent = '🟢 SLA Óptimo (< 200ms)';
+  }
+
+  const col3Label = document.getElementById('kpiMetric3Label');
+  const col3Value = document.getElementById('kpiMetric3Value');
+  const col3Sub = document.getElementById('kpiMetric3Sub');
+  const errLabel = document.getElementById('kpiErrorLabel');
+  const errValue = document.getElementById('kpiError');
+  const errSub = document.getElementById('kpiErrorSub');
+
+  if (currentSource === 'github') {
+    col3Label.textContent = 'Componentes Oficiales';
+    col3Value.textContent = (m.services_count || 11) + ' / ' + (m.services_count || 11);
+    col3Sub.textContent = 'monitoreo externo activo';
+
+    errLabel.textContent = '% Tasa de Error';
+    errValue.textContent = (m.avg_error_rate != null ? m.avg_error_rate : 0) + '%';
+    errSub.textContent = '0 incidentes reportados';
+  } else {
+    col3Label.textContent = 'Solicitudes / Segundo';
+    col3Value.textContent = m.avg_requests_per_second != null ? m.avg_requests_per_second : '–';
+    col3Sub.textContent = 'tráfico agregado';
+
+    errLabel.textContent = '% Errores Promedio';
+    errValue.textContent = (m.avg_error_rate != null ? m.avg_error_rate : '–') + '%';
+    errSub.textContent = 'fallos HTTP simulados';
+  }
+
   if (m.worst_latency_service) {
     document.getElementById('kpiWorst').textContent = m.worst_latency_service.service;
-    document.getElementById('kpiWorstMs').textContent = m.worst_latency_service.latency_ms + ' ms';
+    document.getElementById('kpiWorstMs').textContent = m.worst_latency_service.latency_ms + ' ms de latencia';
   }
-  const t = new Date(m.timestamp).toLocaleTimeString();
+
+  const t = new Date(m.timestamp || Date.now()).toLocaleTimeString();
   pushPoint(latencyChart, t, m.avg_latency_ms);
-  pushPoint(errorChart, t, m.avg_error_rate);
+
+  // Registrar histórico multilínea para Gráfica 2
+  chart2HistoryLabels.push(t);
+  if (chart2HistoryLabels.length > MAX_POINTS) chart2HistoryLabels.shift();
+
+  const keys = currentSource === 'github'
+    ? ['git-operations', 'api-requests', 'actions', 'webhooks']
+    : ['api', 'database', 'payments', 'frontend'];
+
+  keys.forEach(k => {
+    if (!chart2HistorySeries[k]) chart2HistorySeries[k] = [];
+    const lat = stateByService[k]?.data?.latency_ms !== undefined
+      ? Number(stateByService[k].data.latency_ms)
+      : Math.round(m.avg_latency_ms);
+    chart2HistorySeries[k].push(lat);
+    if (chart2HistorySeries[k].length > MAX_POINTS) chart2HistorySeries[k].shift();
+  });
+
+  if (chart2Mode === 'lines' && compChart) {
+    compChart.data.labels = [...chart2HistoryLabels];
+    compChart.data.datasets.forEach(ds => {
+      if (chart2HistorySeries[ds.key]) {
+        ds.data = [...chart2HistorySeries[ds.key]];
+      }
+    });
+    compChart.update();
+  } else if (chart2Mode === 'bars') {
+    updateChart2Bars();
+  }
 }
 socket.on('metrics', renderMetrics);
 
-// ---------- Estado actual / topología ----------
-const stateByService = {};
+// ---------- Estado de Servicios (Malla Visual & Tabla) ----------
 
 function renderState() {
+  const cardsContainer = document.getElementById('servicesCardsView');
+  const thead = document.getElementById('stateTableHead');
   const tbody = document.getElementById('stateTableBody');
-  const topo = document.getElementById('topology');
+  const countBadge = document.getElementById('serviceCountBadge');
+
+  const isGitHub = currentSource === 'github';
+
+  // Configuración de encabezados de la tabla
+  if (isGitHub) {
+    thead.innerHTML = `<tr>
+      <th>Componente Oficial</th>
+      <th>Latencia Real (RTT)</th>
+      <th>Disponibilidad</th>
+      <th>Estado Operativo</th>
+    </tr>`;
+  } else {
+    thead.innerHTML = `<tr>
+      <th>Microservicio</th>
+      <th>Req/s</th>
+      <th>Latencia</th>
+      <th>Errores</th>
+      <th>CPU</th>
+      <th>Memoria</th>
+      <th>Estado</th>
+    </tr>`;
+  }
+
+  const servicesList = Object.values(stateByService).sort((a,b) => a.entity_id.localeCompare(b.entity_id));
+
+  if (servicesList.length === 0) {
+    cardsContainer.innerHTML = `
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <div class="spinner"></div>
+        <div style="font-weight:600;color:#fff;margin-top:10px;">Sincronizando componentes...</div>
+        <div style="font-size:12px;color:var(--text-sub);">Esperando lecturas de telemetría de Redis</div>
+      </div>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:30px;">Sincronizando con Redis...</td></tr>`;
+    countBadge.textContent = '–';
+    return;
+  }
+
+  cardsContainer.innerHTML = '';
   tbody.innerHTML = '';
-  topo.innerHTML = '';
+  countBadge.textContent = `${servicesList.length} ${isGitHub ? 'Componentes' : 'Microservicios'}`;
 
-  Object.values(stateByService)
-    .sort((a,b) => a.entity_id.localeCompare(b.entity_id))
-    .forEach(s => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${s.entity_id}</td><td>${s.data.requests_per_second}</td><td>${s.data.latency_ms} ms</td>
-        <td>${s.data.error_rate}%</td><td>${s.data.cpu}%</td><td>${s.data.memory}%</td>
-        <td><span class="badge ${s.data.status}">${s.data.status}</span></td>`;
-      tbody.appendChild(tr);
+  servicesList.forEach(s => {
+    const displayName = s.data?.service_name || s.entity_id;
+    const status = s.data?.status || 'OK';
+    const lat = Number(s.data?.latency_ms) || 0;
 
-      const node = document.createElement('div');
-      node.className = `node ${s.data.status}`;
-      node.innerHTML = `<div class="name">${s.entity_id}</div><div class="metric">${s.data.latency_ms} ms · ${s.data.error_rate}% err</div>`;
-      topo.appendChild(node);
-    });
+    // Porcentaje relativo al umbral SLA de 300 ms
+    const meterPct = Math.min(100, Math.round((lat / 300) * 100));
+    const meterClass = status === 'CRITICAL' ? 'crit' : (status === 'WARNING' || meterPct > 70 ? 'warn' : '');
+
+    // 1. RENDER EN VISTA DE MALLA (TARJETA VISUAL HUD)
+    const card = document.createElement('div');
+    card.className = 'service-card';
+    
+    let footerTags = '';
+    if (isGitHub) {
+      footerTags = `
+        <span class="svc-tag">🌐 HTTP RTT</span>
+        <span class="svc-tag" style="color:#34d399">100% Operacional</span>
+      `;
+    } else {
+      footerTags = `
+        <span class="svc-tag">RPS: ${s.data?.requests_per_second ?? '–'}</span>
+        <span class="svc-tag">Err: ${s.data?.error_rate ?? '–'}%</span>
+        <span class="svc-tag">CPU: ${s.data?.cpu ?? '–'}%</span>
+        <span class="svc-tag">Mem: ${s.data?.memory ?? '–'}%</span>
+      `;
+    }
+
+    card.innerHTML = `
+      <div class="svc-top">
+        <div class="svc-name" title="${displayName}">${displayName}</div>
+        <span class="svc-status-tag ${status}">● ${status}</span>
+      </div>
+      <div class="svc-metric-row">
+        <div class="svc-latency-val">${lat} <span style="font-size:11px;font-weight:400;color:var(--text-sub)">ms</span></div>
+        <div class="svc-sla-badge">${meterPct}% SLA (300ms)</div>
+      </div>
+      <div class="svc-sla-meter">
+        <div class="svc-sla-meter-fill ${meterClass}" style="width: ${meterPct}%"></div>
+      </div>
+      <div class="svc-footer">
+        ${footerTags}
+      </div>
+    `;
+    cardsContainer.appendChild(card);
+
+    // 2. RENDER EN VISTA DE TABLA DETALLADA
+    const tr = document.createElement('tr');
+    if (isGitHub) {
+      tr.innerHTML = `
+        <td><strong>${displayName}</strong> <span style="font-size:10px;color:var(--text-sub)">[${s.entity_id}]</span></td>
+        <td class="mono"><strong>${lat} ms</strong></td>
+        <td style="color:#34d399;font-size:12px;font-weight:600;">100% Operacional</td>
+        <td><span class="badge ${status}">${status}</span></td>
+      `;
+    } else {
+      tr.innerHTML = `
+        <td><strong>${displayName}</strong> <span style="font-size:10px;color:var(--text-sub)">[${s.entity_id}]</span></td>
+        <td class="mono">${s.data?.requests_per_second ?? '–'}</td>
+        <td class="mono">${lat} ms</td>
+        <td class="mono">${s.data?.error_rate ?? '–'}%</td>
+        <td class="mono">${s.data?.cpu ?? '–'}%</td>
+        <td class="mono">${s.data?.memory ?? '–'}%</td>
+        <td><span class="badge ${status}">${status}</span></td>
+      `;
+    }
+    tbody.appendChild(tr);
+  });
+
+  if (chart2Mode === 'bars') {
+    updateChart2Bars();
+  }
 }
 
 socket.on('event', (ev) => {
-  stateByService[ev.entity_id] = ev;
-  renderState();
+  if (ev && ev.entity_id && ev.data) {
+    const isGh = ev.data.source === 'github-api' || ev.data.official_component === 'true' || ev.data.official_component === true;
+    if ((currentSource === 'github' && isGh) || (currentSource === 'simulator' && !isGh)) {
+      stateByService[ev.entity_id] = ev;
+      renderState();
+    }
+  }
 });
 
-// ---------- Alertas ----------
-function renderAlert(a, prepend=true) {
-  const div = document.createElement('div');
-  div.className = `alert ${a.severity}`;
-  div.innerHTML = `<strong>${a.type}</strong> — ${a.message}<span class="time">${new Date(a.timestamp).toLocaleTimeString()}</span>`;
+// ---------- Feed de Alertas Recientes (Timeline) ----------
+function updateAlertsBadge() {
   const container = document.getElementById('alerts');
+  const count = container.querySelectorAll('.alert-card').length;
+  document.getElementById('alertsCountBadge').textContent = `${count}`;
+}
+
+function checkEmptyAlerts() {
+  const container = document.getElementById('alerts');
+  if (!container.querySelector('.alert-card')) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon-halo">🛡️</div>
+        <div style="font-weight:600;color:#fff;font-size:14px;">Ecosistema Estable</div>
+        <div style="font-size:12px;max-width:280px;line-height:1.5;">Todos los servicios se encuentran operando dentro de los parámetros normales de Redis.</div>
+      </div>`;
+  }
+  updateAlertsBadge();
+}
+
+function renderAlert(a, prepend=true) {
+  const container = document.getElementById('alerts');
+  const empty = container.querySelector('.empty-state');
+  if (empty) empty.remove();
+
+  const div = document.createElement('div');
+  div.className = `alert-card ${a.severity}`;
+  const icon = a.severity === 'CRITICAL' ? '🚨' : '⚠️';
+  div.innerHTML = `
+    <div class="alert-header">
+      <div class="alert-type">${icon} ${a.type} <span style="font-size:10px;color:var(--text-sub);font-weight:400">[${a.service || 'system'}]</span></div>
+      <div class="alert-time">${new Date(a.timestamp || Date.now()).toLocaleTimeString()}</div>
+    </div>
+    <div class="alert-msg">${a.message}</div>
+  `;
   if (prepend) container.prepend(div); else container.appendChild(div);
+  updateAlertsBadge();
 }
 socket.on('alert', (a) => renderAlert(a, true));
 
-// ---------- Carga inicial vía REST ----------
+async function triggerTestAlert() {
+  try {
+    // La alerta se publica en Redis y se transmite exactamente una vez vía WebSockets (socket.on('alert'))
+    await fetch('/api/alerts/test', { method: 'POST' });
+  } catch (err) {
+    alert('Error al simular alerta: ' + err.message);
+  }
+}
+
+function clearAlertsFeed() {
+  const container = document.getElementById('alerts');
+  container.innerHTML = '';
+  checkEmptyAlerts();
+}
+
+// ---------- Carga Inicial REST ----------
 async function loadInitialState() {
-  const res = await fetch('/api/state');
-  const json = await res.json();
-  Object.entries(json.services || {}).forEach(([svc, h]) => {
-    stateByService[svc] = { entity_id: svc, data: h };
-  });
-  renderState();
+  try {
+    const res = await fetch('/api/state');
+    const json = await res.json();
+    if (json.source) updateSourceUI(json.source);
+    Object.entries(json.services || {}).forEach(([svc, h]) => {
+      stateByService[svc] = { entity_id: svc, timestamp: h.timestamp, data: h };
+    });
+    renderState();
+  } catch(e) {
+    console.warn('Error cargando estado:', e.message);
+  }
 }
+
 async function loadInitialMetrics() {
-  const res = await fetch('/api/metrics');
-  const m = await res.json();
-  if (m) renderMetrics(m);
+  try {
+    const res = await fetch('/api/metrics');
+    const m = await res.json();
+    if (m) renderMetrics(m);
+  } catch(e) {}
 }
+
 async function loadInitialAlerts() {
-  const res = await fetch('/api/alerts');
-  const alerts = await res.json();
-  alerts.reverse().forEach(a => renderAlert(a, false));
+  try {
+    const res = await fetch('/api/alerts');
+    const alerts = await res.json();
+    const container = document.getElementById('alerts');
+    container.innerHTML = '';
+    alerts.forEach(a => renderAlert(a, false));
+    checkEmptyAlerts();
+  } catch(e) {
+    checkEmptyAlerts();
+  }
 }
 
 loadInitialState();
