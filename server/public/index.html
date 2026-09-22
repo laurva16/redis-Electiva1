@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Monitoreo de Aplicaciones y Servicios — Grupo 3</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b;
+    --text:#e8eaed; --muted:#9aa3af; --border:#2a2f3a;
+    --ok:#3ddc97; --warn:#f5b942; --crit:#ff5c5c; --accent:#5b8cff;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);}
+  header{padding:20px 28px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  header h1{margin:0;font-size:20px;}
+  header .status{font-size:13px;color:var(--muted);}
+  #connDot{width:9px;height:9px;border-radius:50%;background:var(--crit);display:inline-block;margin-right:6px;}
+  #connDot.on{background:var(--ok);}
+
+  main{padding:24px 28px;max-width:1400px;margin:0 auto;}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px;}
+  .kpi{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .kpi .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+  .kpi .value{font-size:26px;font-weight:600;margin-top:6px;}
+  .kpi .sub{font-size:12px;color:var(--muted);margin-top:4px;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px;}
+  @media (max-width:900px){.grid2{grid-template-columns:1fr;}}
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;}
+  .panel h2{margin:0 0 14px;font-size:15px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:500;}
+  .badge{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+  .badge.OK{background:rgba(61,220,151,.15);color:var(--ok);}
+  .badge.WARNING{background:rgba(245,185,66,.15);color:var(--warn);}
+  .badge.CRITICAL{background:rgba(255,92,92,.15);color:var(--crit);}
+
+  #topology{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;padding:10px 0;}
+  .node{border:2px solid var(--border);border-radius:10px;padding:14px 18px;text-align:center;min-width:110px;background:var(--panel2);}
+  .node .name{font-weight:600;font-size:13px;}
+  .node .metric{font-size:11px;color:var(--muted);margin-top:4px;}
+  .node.OK{border-color:var(--ok);}
+  .node.WARNING{border-color:var(--warn);}
+  .node.CRITICAL{border-color:var(--crit);animation:pulse 1.2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,92,92,.5);}70%{box-shadow:0 0 0 8px rgba(255,92,92,0);}100%{box-shadow:0 0 0 0 rgba(255,92,92,0);}}
+
+  #alerts{max-height:260px;overflow-y:auto;}
+  .alert{padding:8px 10px;border-radius:8px;margin-bottom:6px;font-size:13px;border-left:3px solid var(--warn);background:var(--panel2);}
+  .alert.CRITICAL{border-left-color:var(--crit);}
+  .alert .time{color:var(--muted);font-size:11px;margin-left:6px;}
+  canvas{max-height:260px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🩺 Monitoreo de Aplicaciones y Servicios — Grupo 3</h1>
+  <div class="status"><span id="connDot"></span><span id="connText">Conectando...</span></div>
+</header>
+
+<main>
+
+  <section class="kpis" id="kpis">
+    <div class="kpi"><div class="label">Latencia promedio</div><div class="value" id="kpiLatency">–</div><div class="sub">ms</div></div>
+    <div class="kpi"><div class="label">% Errores promedio</div><div class="value" id="kpiError">–</div><div class="sub">%</div></div>
+    <div class="kpi"><div class="label">Solicitudes/seg</div><div class="value" id="kpiRps">–</div><div class="sub">promedio global</div></div>
+    <div class="kpi"><div class="label">Disponibilidad</div><div class="value" id="kpiAvail">–</div><div class="sub">servicios OK</div></div>
+    <div class="kpi"><div class="label">Mayor latencia</div><div class="value" id="kpiWorst">–</div><div class="sub" id="kpiWorstMs"></div></div>
+  </section>
+
+  <section class="panel" style="margin-bottom:24px;">
+    <h2>Topología de servicios (estado actual)</h2>
+    <div id="topology"></div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel">
+      <h2>Latencia vs. tiempo (promedio global)</h2>
+      <canvas id="chartLatency"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Errores vs. tiempo (% promedio global)</h2>
+      <canvas id="chartErrors"></canvas>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel">
+      <h2>Estado actual por servicio</h2>
+      <table>
+        <thead><tr><th>Servicio</th><th>Req/s</th><th>Latencia</th><th>Errores</th><th>CPU</th><th>Mem</th><th>Estado</th></tr></thead>
+        <tbody id="stateTableBody"></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <h2>Alertas recientes</h2>
+      <div id="alerts"></div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const socket = io();
+const connDot = document.getElementById('connDot');
+const connText = document.getElementById('connText');
+
+socket.on('connect', () => { connDot.classList.add('on'); connText.textContent = 'Tiempo real activo'; });
+socket.on('disconnect', () => { connDot.classList.remove('on'); connText.textContent = 'Desconectado'; });
+
+// ---------- Charts ----------
+const MAX_POINTS = 30;
+const latencyChart = new Chart(document.getElementById('chartLatency'), {
+  type: 'line',
+  data: { labels: [], datasets: [{ label: 'Latencia promedio (ms)', data: [], borderColor: '#5b8cff', backgroundColor: 'rgba(91,140,255,.15)', tension: .3, fill:true }] },
+  options: { responsive:true, animation:false, scales:{ y:{ beginAtZero:true } }, plugins:{legend:{display:false}} }
+});
+const errorChart = new Chart(document.getElementById('chartErrors'), {
+  type: 'line',
+  data: { labels: [], datasets: [{ label: '% Errores promedio', data: [], borderColor: '#ff5c5c', backgroundColor: 'rgba(255,92,92,.15)', tension: .3, fill:true }] },
+  options: { responsive:true, animation:false, scales:{ y:{ beginAtZero:true } }, plugins:{legend:{display:false}} }
+});
+
+function pushPoint(chart, label, value) {
+  chart.data.labels.push(label);
+  chart.data.datasets[0].data.push(value);
+  if (chart.data.labels.length > MAX_POINTS) {
+    chart.data.labels.shift();
+    chart.data.datasets[0].data.shift();
+  }
+  chart.update();
+}
+
+// ---------- Metrics / KPIs ----------
+function renderMetrics(m) {
+  document.getElementById('kpiLatency').textContent = m.avg_latency_ms;
+  document.getElementById('kpiError').textContent = m.avg_error_rate;
+  document.getElementById('kpiRps').textContent = m.avg_requests_per_second;
+  document.getElementById('kpiAvail').textContent = m.availability_pct + '%';
+  if (m.worst_latency_service) {
+    document.getElementById('kpiWorst').textContent = m.worst_latency_service.service;
+    document.getElementById('kpiWorstMs').textContent = m.worst_latency_service.latency_ms + ' ms';
+  }
+  const t = new Date(m.timestamp).toLocaleTimeString();
+  pushPoint(latencyChart, t, m.avg_latency_ms);
+  pushPoint(errorChart, t, m.avg_error_rate);
+}
+socket.on('metrics', renderMetrics);
+
+// ---------- Estado actual / topología ----------
+const stateByService = {};
+
+function renderState() {
+  const tbody = document.getElementById('stateTableBody');
+  const topo = document.getElementById('topology');
+  tbody.innerHTML = '';
+  topo.innerHTML = '';
+
+  Object.values(stateByService)
+    .sort((a,b) => a.entity_id.localeCompare(b.entity_id))
+    .forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${s.entity_id}</td><td>${s.data.requests_per_second}</td><td>${s.data.latency_ms} ms</td>
+        <td>${s.data.error_rate}%</td><td>${s.data.cpu}%</td><td>${s.data.memory}%</td>
+        <td><span class="badge ${s.data.status}">${s.data.status}</span></td>`;
+      tbody.appendChild(tr);
+
+      const node = document.createElement('div');
+      node.className = `node ${s.data.status}`;
+      node.innerHTML = `<div class="name">${s.entity_id}</div><div class="metric">${s.data.latency_ms} ms · ${s.data.error_rate}% err</div>`;
+      topo.appendChild(node);
+    });
+}
+
+socket.on('event', (ev) => {
+  stateByService[ev.entity_id] = ev;
+  renderState();
+});
+
+// ---------- Alertas ----------
+function renderAlert(a, prepend=true) {
+  const div = document.createElement('div');
+  div.className = `alert ${a.severity}`;
+  div.innerHTML = `<strong>${a.type}</strong> — ${a.message}<span class="time">${new Date(a.timestamp).toLocaleTimeString()}</span>`;
+  const container = document.getElementById('alerts');
+  if (prepend) container.prepend(div); else container.appendChild(div);
+}
+socket.on('alert', (a) => renderAlert(a, true));
+
+// ---------- Carga inicial vía REST ----------
+async function loadInitialState() {
+  const res = await fetch('/api/state');
+  const json = await res.json();
+  Object.entries(json.services || {}).forEach(([svc, h]) => {
+    stateByService[svc] = { entity_id: svc, data: h };
+  });
+  renderState();
+}
+async function loadInitialMetrics() {
+  const res = await fetch('/api/metrics');
+  const m = await res.json();
+  if (m) renderMetrics(m);
+}
+async function loadInitialAlerts() {
+  const res = await fetch('/api/alerts');
+  const alerts = await res.json();
+  alerts.reverse().forEach(a => renderAlert(a, false));
+}
+
+loadInitialState();
+loadInitialMetrics();
+loadInitialAlerts();
+</script>
+</body>
+</html>
