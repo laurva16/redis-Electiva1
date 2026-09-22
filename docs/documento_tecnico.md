@@ -39,20 +39,24 @@ Componentes:
 
 ## 4. Fuente de datos
 
-Se utiliza un **simulador propio** (modo simulado), ya que la actividad no
-exige una API pública para este dominio y se sugiere explícitamente
-investigar OpenTelemetry como posible fuente real. El simulador:
+El sistema implementa una arquitectura híbrida con soporte completo tanto para **Modo Real** como para **Modo Simulado**, cumpliendo con los puntos 6, 7 y 18 del documento de la actividad:
 
-- Representa 5 microservicios (`frontend`, `api`, `authentication`,
-  `payments`, `database`).
-- Evoluciona los valores mediante una caminata aleatoria acotada (nunca hay
-  saltos bruscos entre lecturas consecutivas).
-- Introduce incidentes simulados con baja probabilidad: picos de latencia,
-  aumento de errores y caída de servicio, seguidos de recuperación gradual.
+1. **Modo Real (API Pública de GitHub Status):**
+   - **Endpoint consumido:** `https://www.githubstatus.com/api/v2/summary.json`
+   - **Componentes monitoreados:** `Git Operations`, `API Requests`, `Webhooks`, `Issues`, `Pull Requests`, `Actions`.
+   - **Medición de latencia real:** El Publisher calcula el tiempo de respuesta HTTP (`round-trip time` en ms) de la petición real a los servidores de GitHub.
+   - **Mapeo operativo:** Transforma los estados de la API (`operational`, `degraded_performance`, `partial_outage`, `major_outage`) a la escala unificada del sistema (`OK`, `WARNING`, `CRITICAL`).
+   
+2. **Modo Simulado (Simulador estocástico):**
+   - Representa 5 microservicios internos (`frontend`, `api`, `authentication`, `payments`, `database`).
+   - Evoluciona los valores mediante una caminata aleatoria acotada (*random walk*, sin saltos bruscos).
+   - Inyecta incidentes probabilísticos (`LATENCY_SPIKE`, `ERROR_SPIKE`, `SERVICE_DOWN`) seguidos de recuperación gradual.
 
-*(Si el equipo decide integrar OpenTelemetry como fuente real adicional,
-documentar aquí el endpoint/instrumentación utilizada y qué ocurre cuando
-no está disponible — el sistema debe seguir funcionando en modo simulado.)*
+3. **Conmutación en caliente (*Hot-Switching*) y Fallback transparente:**
+   - A través de la interfaz web o mediante Redis Pub/Sub (`system:config`), el operador puede alternar entre ambos modos en cualquier momento sin reiniciar procesos.
+   - Si la API de GitHub presenta intermitencias, error de red o timeout, el Publisher activa automáticamente el simulador como mecanismo de respaldo (*fallback*), garantizando que el pipeline de eventos en Redis y el Dashboard nunca se detengan.
+
+*(Nota técnica: Se investigó OpenTelemetry como estándar de instrumentación en la industria; no obstante, para fines de esta práctica centrada en Redis y disponibilidad distribuida, el desacoplamiento en el Publisher permite consumir telemetría viva de GitHub Status API garantizando máxima portabilidad sin dependencias pesadas).*
 
 ## 5. Estructura de los eventos
 
