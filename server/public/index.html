@@ -6,63 +6,63 @@
 <title>PULSE · Observabilidad y Monitoreo de Servicios — Grupo 3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <style>
   :root {
-    --bg-base: #070a13;
-    --bg-surface: rgba(13, 19, 36, 0.78);
-    --bg-surface-solid: #0c1222;
-    --bg-card: rgba(18, 26, 50, 0.7);
-    --bg-card-hover: rgba(27, 39, 74, 0.9);
-    --border: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(99, 102, 241, 0.45);
-    --border-glow: rgba(99, 102, 241, 0.25);
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --text-sub: #64748b;
-    --accent: #6366f1;
-    --accent-light: #818cf8;
-    --accent-glow: rgba(99, 102, 241, 0.45);
-    --cyan: #06b6d4;
-    --cyan-glow: rgba(6, 182, 212, 0.4);
-    --ok: #10b981;
-    --ok-glow: rgba(16, 185, 129, 0.35);
-    --warn: #f59e0b;
-    --warn-glow: rgba(245, 158, 11, 0.35);
-    --crit: #f43f5e;
-    --crit-glow: rgba(244, 63, 94, 0.45);
+    --bg-base: #eeece6;
+    --bg-surface: #ffffff;
+    --bg-surface-solid: #ffffff;
+    --bg-card: #ffffff;
+    --bg-card-hover: #fbfaf7;
+    --border: rgba(20, 20, 18, 0.08);
+    --border-hover: rgba(20, 20, 18, 0.18);
+    --border-glow: rgba(20, 20, 18, 0.06);
+    --text-main: #1c1b18;
+    --text-muted: #6f6d66;
+    --text-sub: #96938a;
+    --accent: #1c1b18;
+    --accent-light: #37352f;
+    --accent-glow: rgba(28, 27, 24, 0.12);
+    --cyan: #5b7fd6;
+    --cyan-glow: rgba(91, 127, 214, 0.25);
+    --ok: #2f9e6e;
+    --ok-glow: rgba(47, 158, 110, 0.25);
+    --warn: #c98a1f;
+    --warn-glow: rgba(201, 138, 31, 0.25);
+    --crit: #d1495b;
+    --crit-glow: rgba(209, 73, 91, 0.28);
+    --mint: #baf1d9;
+    --cream: #fbeecb;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     background-color: var(--bg-base);
-    background-image: 
-      radial-gradient(at 50% 0%, rgba(99, 102, 241, 0.14) 0px, transparent 55%),
-      radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
-    background-attachment: fixed;
     color: var(--text-main);
     min-height: 100vh;
     padding-bottom: 40px;
     -webkit-font-smoothing: antialiased;
   }
 
+  h1, h2, .panel-title, .kpi-title, .brand-title-wrap h1 { font-family: 'Sora', 'Plus Jakarta Sans', sans-serif; }
+
   /* Custom Slim Scrollbars */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 4px; }
-  ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.02); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.14); border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--accent-light); }
+
+  .icon { width: 16px; height: 16px; flex-shrink: 0; display: inline-block; vertical-align: middle; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
   /* Header */
   header {
-    background: rgba(8, 12, 24, 0.88);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: var(--bg-base);
     border-bottom: 1px solid var(--border);
-    padding: 14px 36px;
+    padding: 18px 36px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -72,26 +72,19 @@
   }
   .brand { display: flex; align-items: center; gap: 14px; }
   .brand-logo-badge {
-    width: 42px; height: 42px; border-radius: 12px;
-    background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+    width: 40px; height: 40px; border-radius: 11px;
+    background: var(--mint);
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 0 20px var(--accent-glow);
-    font-size: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(20,20,18,0.1);
     position: relative;
     overflow: hidden;
   }
-  .brand-logo-badge::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 60%);
-  }
+  .brand-logo-badge .icon { width: 20px; height: 20px; stroke: #123524; stroke-width: 2; }
   .brand-title-wrap h1 {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 700;
     letter-spacing: -0.01em;
-    color: #fff;
+    color: var(--text-main);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -100,9 +93,9 @@
     font-size: 10px;
     padding: 2px 7px;
     border-radius: 6px;
-    background: rgba(99, 102, 241, 0.18);
-    color: var(--accent-light);
-    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: var(--cream);
+    color: #7a5c14;
+    border: 1px solid rgba(201, 138, 31, 0.25);
     font-weight: 700;
     letter-spacing: 0.05em;
   }
@@ -117,26 +110,24 @@
   .brand-title-wrap .subtitle a {
     color: var(--cyan);
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
     transition: all .2s;
   }
   .brand-title-wrap .subtitle a:hover {
-    color: #fff;
-    text-shadow: 0 0 8px var(--cyan-glow);
+    color: var(--text-main);
   }
 
   .header-actions { display: flex; align-items: center; gap: 14px; }
   
   /* Segmented Mode Switcher */
   .mode-switch-container {
-    background: rgba(0, 0, 0, 0.5);
+    background: #fff;
     border: 1px solid var(--border);
     border-radius: 30px;
     padding: 3px;
     display: flex;
     align-items: center;
     gap: 3px;
-    box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
   }
   .mode-btn {
     background: transparent;
@@ -146,28 +137,26 @@
     border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     cursor: pointer;
     transition: all .25s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     gap: 7px;
   }
-  .mode-btn:hover { color: #fff; }
+  .mode-btn:hover { color: var(--text-main); }
   .mode-btn.active.sim {
-    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    background: var(--text-main);
     color: #fff;
-    box-shadow: 0 0 16px var(--accent-glow);
   }
   .mode-btn.active.gh {
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: #042113;
+    background: var(--mint);
+    color: #123524;
     font-weight: 700;
-    box-shadow: 0 0 16px var(--ok-glow);
   }
 
   .status-pill {
-    background: rgba(255, 255, 255, 0.04);
+    background: #fff;
     border: 1px solid var(--border);
     padding: 6px 14px;
     border-radius: 20px;
@@ -218,51 +207,42 @@
   }
   .kpi-card {
     background: var(--bg-surface);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 20px;
     padding: 18px 20px;
     position: relative;
     overflow: hidden;
     transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
-    box-shadow: 0 10px 25px -10px rgba(0,0,0,0.4);
+    box-shadow: 0 1px 2px rgba(20,20,18,0.04);
   }
   .kpi-card:hover {
     transform: translateY(-3px);
     border-color: var(--border-hover);
-    box-shadow: 0 14px 30px -10px var(--border-glow);
+    box-shadow: 0 10px 20px -12px rgba(20,20,18,0.18);
   }
-  .kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, var(--accent), var(--cyan));
-    opacity: 0.9;
-  }
-  .kpi-card.ok-accent::before { background: linear-gradient(90deg, var(--ok), #34d399); }
-  .kpi-card.warn-accent::before { background: linear-gradient(90deg, var(--warn), #fbbf24); }
+  .kpi-card.ok-accent { background: var(--mint); border-color: rgba(20,20,18,0.06); }
+  .kpi-card.warn-accent { background: var(--cream); border-color: rgba(20,20,18,0.06); }
 
   .kpi-top { display: flex; justify-content: space-between; align-items: center; }
   .kpi-title { font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em; color: var(--text-muted); }
+  .kpi-card.ok-accent .kpi-title, .kpi-card.warn-accent .kpi-title { color: rgba(20,20,18,0.55); }
   .kpi-icon-chip {
-    width: 24px; height: 24px; border-radius: 6px;
-    background: rgba(255, 255, 255, 0.04);
+    width: 26px; height: 26px; border-radius: 8px;
+    background: rgba(20, 20, 18, 0.05);
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px;
   }
-  .kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 27px; font-weight: 700; margin: 8px 0 2px; color: #fff; }
+  .kpi-icon-chip .icon { width: 14px; height: 14px; }
+  .kpi-value { font-family: 'Space Mono', monospace; font-size: 26px; font-weight: 700; margin: 10px 0 2px; color: var(--text-main); }
   .kpi-sub { font-size: 12px; color: var(--text-sub); }
+  .kpi-card.ok-accent .kpi-sub, .kpi-card.warn-accent .kpi-sub { color: rgba(20,20,18,0.5); }
 
   /* Panels Common */
   .panel {
     background: var(--bg-surface);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 20px;
     padding: 20px 22px;
-    box-shadow: 0 14px 35px -12px rgba(0,0,0,0.55);
+    box-shadow: 0 1px 2px rgba(20,20,18,0.04);
   }
   .panel-header {
     display: flex;
@@ -283,13 +263,12 @@
   .panel-title .dot-indicator {
     width: 6px; height: 6px; border-radius: 50%;
     background: var(--accent-light);
-    box-shadow: 0 0 8px var(--accent-glow);
   }
 
   /* View Switcher Controls (Tabs) */
   .view-switch {
     display: flex;
-    background: rgba(0,0,0,0.4);
+    background: rgba(20,20,18,0.04);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 2px;
@@ -303,18 +282,17 @@
     border-radius: 6px;
     font-size: 11px;
     font-weight: 600;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     cursor: pointer;
     transition: all .2s;
     display: flex;
     align-items: center;
     gap: 5px;
   }
-  .view-btn:hover { color: #fff; }
+  .view-btn:hover { color: var(--text-main); }
   .view-btn.active {
-    background: var(--accent);
+    background: var(--text-main);
     color: #fff;
-    box-shadow: 0 0 12px var(--accent-glow);
   }
 
   /* Charts Grid */
@@ -338,9 +316,9 @@
     gap: 6px;
     letter-spacing: 0.02em;
   }
-  .sla-pill.ok { background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-  .sla-pill.warn { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-  .sla-pill.crit { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35); }
+  .sla-pill.ok { background: var(--mint); color: #14532d; border: 1px solid rgba(47,158,110,0.25); }
+  .sla-pill.warn { background: var(--cream); color: #7a5c14; border: 1px solid rgba(201,138,31,0.3); }
+  .sla-pill.crit { background: rgba(209, 73, 91, 0.12); color: #a4243b; border: 1px solid rgba(209, 73, 91, 0.3); }
 
   /* -------------------------------------------------------------
      Symmetrical Equal-Height Bottom Grid (Exact Height: 540px)
@@ -358,17 +336,15 @@
     display: flex;
     flex-direction: column;
     background: var(--bg-surface);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 14px 35px -12px rgba(0,0,0,0.55);
+    box-shadow: 0 1px 2px rgba(20,20,18,0.04);
     padding: 0;
   }
   .sync-panel-header {
     padding: 14px 20px;
-    background: rgba(10, 15, 29, 0.7);
+    background: #fbfaf7;
     border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
@@ -391,7 +367,7 @@
   .service-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 13px 15px;
     transition: all .25s ease;
     display: flex;
@@ -400,28 +376,28 @@
     position: relative;
   }
   .service-card:hover {
-    border-color: rgba(99, 102, 241, 0.35);
+    border-color: rgba(20, 20, 18, 0.22);
     transform: translateY(-2px);
     background: var(--bg-card-hover);
-    box-shadow: 0 8px 20px -6px rgba(0,0,0,0.4);
+    box-shadow: 0 8px 18px -10px rgba(20,20,18,0.25);
   }
   .svc-top { display: flex; justify-content: space-between; align-items: center; }
-  .svc-name { font-weight: 700; font-size: 13px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  
+  .svc-name { font-weight: 700; font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
   .svc-status-tag {
     font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 12px;
     display: flex; align-items: center; gap: 4px; letter-spacing: 0.04em;
   }
-  .svc-status-tag.OK { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-  .svc-status-tag.WARNING { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-  .svc-status-tag.CRITICAL { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35); }
+  .svc-status-tag.OK { background: var(--mint); color: #14532d; border: 1px solid rgba(47,158,110,0.25); }
+  .svc-status-tag.WARNING { background: var(--cream); color: #7a5c14; border: 1px solid rgba(201,138,31,0.3); }
+  .svc-status-tag.CRITICAL { background: rgba(209, 73, 91, 0.12); color: #a4243b; border: 1px solid rgba(209, 73, 91, 0.3); }
 
   .svc-metric-row { display: flex; justify-content: space-between; align-items: baseline; }
-  .svc-latency-val { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 700; color: #fff; }
+  .svc-latency-val { font-family: 'Space Mono', monospace; font-size: 17px; font-weight: 700; color: var(--text-main); }
   .svc-sla-badge { font-size: 10px; color: var(--text-sub); }
 
   /* Micro-barra de progreso hacia umbral SLA 300ms */
-  .svc-sla-meter { width: 100%; height: 5px; background: rgba(255, 255, 255, 0.06); border-radius: 3px; overflow: hidden; }
+  .svc-sla-meter { width: 100%; height: 5px; background: rgba(20, 20, 18, 0.06); border-radius: 3px; overflow: hidden; }
   .svc-sla-meter-fill { height: 100%; background: var(--ok); border-radius: 3px; transition: width .4s ease, background .4s; }
   .svc-sla-meter-fill.warn { background: var(--warn); }
   .svc-sla-meter-fill.crit { background: var(--crit); }
@@ -433,13 +409,13 @@
     font-size: 10px;
     color: var(--text-muted);
     padding-top: 6px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--border);
   }
   .svc-tag {
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(20, 20, 18, 0.04);
     padding: 2px 6px;
     border-radius: 4px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Space Mono', monospace;
     font-size: 10px;
   }
 
@@ -460,12 +436,12 @@
   }
   td {
     padding: 10px 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid var(--border);
     font-size: 13px;
     color: var(--text-main);
   }
-  tr:hover td { background: rgba(255, 255, 255, 0.025); }
-  .mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  tr:hover td { background: rgba(20, 20, 18, 0.02); }
+  .mono { font-family: 'Space Mono', monospace; font-size: 12px; }
 
   .badge {
     padding: 3px 10px;
@@ -475,16 +451,16 @@
     letter-spacing: 0.02em;
     display: inline-block;
   }
-  .badge.OK { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-  .badge.WARNING { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-  .badge.CRITICAL { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35); }
+  .badge.OK { background: var(--mint); color: #14532d; border: 1px solid rgba(47,158,110,0.25); }
+  .badge.WARNING { background: var(--cream); color: #7a5c14; border: 1px solid rgba(201,138,31,0.3); }
+  .badge.CRITICAL { background: rgba(209, 73, 91, 0.12); color: #a4243b; border: 1px solid rgba(209, 73, 91, 0.3); }
 
   /* Feed de Alertas */
   .alert-card {
-    background: rgba(17, 26, 50, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: #fbfaf7;
+    border: 1px solid var(--border);
     border-left: 4px solid var(--warn);
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 12px 14px;
     margin-bottom: 8px;
     display: flex;
@@ -492,12 +468,12 @@
     gap: 4px;
     transition: transform .2s ease, background .2s ease;
   }
-  .alert-card:hover { transform: translateX(3px); background: rgba(25, 37, 70, 0.8); }
-  .alert-card.CRITICAL { border-left-color: var(--crit); background: rgba(244, 63, 94, 0.08); }
-  .alert-card.CRITICAL:hover { background: rgba(244, 63, 94, 0.13); }
+  .alert-card:hover { transform: translateX(3px); background: #f5f3ee; }
+  .alert-card.CRITICAL { border-left-color: var(--crit); background: rgba(209, 73, 91, 0.05); }
+  .alert-card.CRITICAL:hover { background: rgba(209, 73, 91, 0.09); }
   .alert-header { display: flex; justify-content: space-between; align-items: center; }
-  .alert-type { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: #fff; }
-  .alert-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-sub); }
+  .alert-type { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: var(--text-main); display: flex; align-items: center; gap: 6px; }
+  .alert-time { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text-sub); }
   .alert-msg { font-size: 13px; color: var(--text-main); }
 
   .empty-state {
@@ -515,16 +491,15 @@
   }
   .empty-icon-halo {
     width: 54px; height: 54px; border-radius: 50%;
-    background: rgba(16, 185, 129, 0.08);
-    border: 1px solid rgba(16, 185, 129, 0.25);
+    background: var(--mint);
+    border: 1px solid rgba(47, 158, 110, 0.25);
     display: flex; align-items: center; justify-content: center;
-    font-size: 24px;
-    box-shadow: 0 0 20px var(--ok-glow);
   }
+  .empty-icon-halo .icon { width: 24px; height: 24px; stroke: #14532d; }
 
   .spinner {
     width: 32px; height: 32px; border-radius: 50%;
-    border: 3px solid rgba(99, 102, 241, 0.15);
+    border: 3px solid rgba(20, 20, 18, 0.1);
     border-top-color: var(--accent-light);
     animation: spin 1s linear infinite;
   }
@@ -532,42 +507,47 @@
 
   /* Action buttons in alert header */
   .btn-mini {
-    background: rgba(244, 63, 94, 0.12);
-    color: #fb7185;
-    border: 1px solid rgba(244, 63, 94, 0.3);
+    background: rgba(209, 73, 91, 0.1);
+    color: #a4243b;
+    border: 1px solid rgba(209, 73, 91, 0.25);
     padding: 5px 12px;
     border-radius: 6px;
     font-size: 11px;
     font-weight: 600;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     cursor: pointer;
     transition: all .2s;
     display: inline-flex;
     align-items: center;
     gap: 5px;
   }
-  .btn-mini:hover { background: var(--crit); color: #fff; box-shadow: 0 0 12px var(--crit-glow); }
-  
+  .btn-mini:hover { background: var(--crit); color: #fff; }
+
   .btn-mini-sub {
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(20, 20, 18, 0.03);
     color: var(--text-muted);
     border: 1px solid var(--border);
     padding: 5px 10px;
     border-radius: 6px;
     font-size: 11px;
     font-weight: 600;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     cursor: pointer;
     transition: all .2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
   }
-  .btn-mini-sub:hover { color: #fff; background: rgba(255, 255, 255, 0.09); }
+  .btn-mini-sub:hover { color: var(--text-main); background: rgba(20, 20, 18, 0.07); }
 </style>
 </head>
 <body>
 
 <header>
   <div class="brand">
-    <div class="brand-logo-badge">⚡</div>
+    <div class="brand-logo-badge">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v6M12 15v6M5 12h4M15 12h4M7.5 7.5l2.5 2.5M14 14l2.5 2.5M16.5 7.5L14 10M10 14l-2.5 2.5"/></svg>
+    </div>
     <div class="brand-title-wrap">
       <h1>
         PULSE · Observabilidad de Servicios
@@ -587,10 +567,12 @@
     <!-- Selector Dinámico de Modo -->
     <div class="mode-switch-container">
       <button id="btnSimulator" class="mode-btn active sim" onclick="switchSource('simulator')">
-        ⚙️ Modo Simulador
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Modo Simulador
       </button>
       <button id="btnGithub" class="mode-btn" onclick="switchSource('github')">
-        🌐 GitHub API (Real)
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13.5 13.5 0 0 1 0 18M12 3a13.5 13.5 0 0 0 0 18"/></svg>
+        GitHub API (Real)
       </button>
     </div>
 
@@ -611,7 +593,7 @@
     <div class="kpi-card">
       <div class="kpi-top">
         <div class="kpi-title" id="kpiLatencyLabel">Latencia Promedio Global</div>
-        <div class="kpi-icon-chip">⏱️</div>
+        <div class="kpi-icon-chip"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
       </div>
       <div class="kpi-value" id="kpiLatency">–</div>
       <div class="kpi-sub" id="kpiLatencySub">ms (Round-Trip en Tiempo Real)</div>
@@ -620,16 +602,16 @@
     <div class="kpi-card ok-accent">
       <div class="kpi-top">
         <div class="kpi-title">Disponibilidad del Ecosistema</div>
-        <div class="kpi-icon-chip">🛡️</div>
+        <div class="kpi-icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
       </div>
-      <div class="kpi-value" id="kpiAvail" style="color:#34d399;">–</div>
+      <div class="kpi-value" id="kpiAvail" style="color:#2f9e6e;">–</div>
       <div class="kpi-sub">servicios operando normalmente</div>
     </div>
 
     <div class="kpi-card">
       <div class="kpi-top">
         <div class="kpi-title" id="kpiMetric3Label">Solicitudes / Segundo</div>
-        <div class="kpi-icon-chip">🔄</div>
+        <div class="kpi-icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L21 9M20 12a8 8 0 0 1-14 5.3L3 15"/><path d="M21 3v6h-6M3 21v-6h6"/></svg></div>
       </div>
       <div class="kpi-value" id="kpiMetric3Value">–</div>
       <div class="kpi-sub" id="kpiMetric3Sub">tráfico agregado</div>
@@ -638,7 +620,7 @@
     <div class="kpi-card">
       <div class="kpi-top">
         <div class="kpi-title" id="kpiErrorLabel">% Tasa de Error</div>
-        <div class="kpi-icon-chip">⚠️</div>
+        <div class="kpi-icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/></svg></div>
       </div>
       <div class="kpi-value" id="kpiError">–</div>
       <div class="kpi-sub" id="kpiErrorSub">promedio global</div>
@@ -647,7 +629,7 @@
     <div class="kpi-card warn-accent">
       <div class="kpi-top">
         <div class="kpi-title">Componente Más Lento</div>
-        <div class="kpi-icon-chip">🐢</div>
+        <div class="kpi-icon-chip"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20V10M12 10a4 4 0 1 1 4-4M12 10a4 4 0 1 0-4-4M6 15h12M4 20h16"/></svg></div>
       </div>
       <div class="kpi-value" id="kpiWorst" style="font-size:17px;line-height:36px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">–</div>
       <div class="kpi-sub" id="kpiWorstMs">–</div>
@@ -666,7 +648,7 @@
           </div>
           <div style="font-size:11px;color:var(--text-sub);margin-top:2px;">Evolución temporal con umbral de tolerancia SLA</div>
         </div>
-        <div id="slaStatusBadge" class="sla-pill ok">🟢 SLA Óptimo (&lt; 300ms)</div>
+        <div id="slaStatusBadge" class="sla-pill ok">SLA Óptimo (&lt; 300ms)</div>
       </div>
       <div class="chart-container">
         <canvas id="chartLatency"></canvas>
@@ -685,10 +667,12 @@
         </div>
         <div class="view-switch">
           <button id="btnChartBars" class="view-btn active" onclick="setChart2Mode('bars')">
-            📊 Ranking de Barras
+            <svg class="icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+            Ranking de Barras
           </button>
           <button id="btnChartLines" class="view-btn" onclick="setChart2Mode('lines')">
-            📈 Tendencia Multilínea
+            <svg class="icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M3 17l5-6 4 3 6-8"/><path d="M14 5h5v5"/></svg>
+            Tendencia Multilínea
           </button>
         </div>
       </div>
@@ -709,14 +693,16 @@
             <span class="dot-indicator"></span>
             Estado de Componentes
           </div>
-          <span id="serviceCountBadge" style="font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.06);border-radius:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">–</span>
+          <span id="serviceCountBadge" style="font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.06);border-radius:12px;color:var(--text-muted);font-family:'Space Mono',monospace;">–</span>
         </div>
         <div class="view-switch">
           <button id="btnViewCards" class="view-btn active" onclick="setServiceView('cards')">
-            ⊞ Malla Visual
+            <svg class="icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            Malla Visual
           </button>
           <button id="btnViewTable" class="view-btn" onclick="setServiceView('table')">
-            ☰ Tabla Detallada
+            <svg class="icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            Tabla Detallada
           </button>
         </div>
       </div>
@@ -745,14 +731,16 @@
             <span class="dot-indicator" style="background:var(--warn);box-shadow:0 0 8px var(--warn-glow);"></span>
             Registro de Alertas Recientes
           </div>
-          <span id="alertsCountBadge" style="font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.06);border-radius:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">0</span>
+          <span id="alertsCountBadge" style="font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.06);border-radius:12px;color:var(--text-muted);font-family:'Space Mono',monospace;">0</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
           <button class="btn-mini" onclick="triggerTestAlert()" title="Paso 6: Provocar condición de alerta y ver reflejo en tiempo real">
-            ⚡ Simular Alerta
+            <svg class="icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>
+            Simular Alerta
           </button>
           <button class="btn-mini-sub" onclick="clearAlertsFeed()" title="Limpiar feed local">
-            🧹 Limpiar
+            <svg class="icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+            Limpiar
           </button>
         </div>
       </div>
@@ -879,8 +867,8 @@ function setServiceView(view) {
 const MAX_POINTS = 25;
 const latencyCtx = document.getElementById('chartLatency').getContext('2d');
 const latencyGrad = latencyCtx.createLinearGradient(0, 0, 0, 260);
-latencyGrad.addColorStop(0, 'rgba(99, 102, 241, 0.45)');
-latencyGrad.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+latencyGrad.addColorStop(0, 'rgba(91, 127, 214, 0.35)');
+latencyGrad.addColorStop(1, 'rgba(91, 127, 214, 0.0)');
 
 // Plugin para dibujar la línea de tolerancia SLA de 300 ms
 const thresholdPlugin = {
@@ -894,14 +882,14 @@ const thresholdPlugin = {
       ctx.save();
       ctx.beginPath();
       ctx.setLineDash([5, 5]);
-      ctx.strokeStyle = 'rgba(244, 63, 94, 0.85)';
+      ctx.strokeStyle = 'rgba(209, 73, 91, 0.85)';
       ctx.lineWidth = 1.5;
       ctx.moveTo(chart.chartArea.left, yPos);
       ctx.lineTo(chart.chartArea.right, yPos);
       ctx.stroke();
 
-      ctx.fillStyle = '#fb7185';
-      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#a4243b';
+      ctx.font = '10px "Space Mono", monospace';
       ctx.textAlign = 'right';
       ctx.fillText('UMBRAL ALERTA: 300ms', chart.chartArea.right - 10, yPos - 6);
       ctx.restore();
@@ -916,13 +904,13 @@ const latencyChart = new Chart(latencyCtx, {
     datasets: [{
       label: 'Latencia Promedio Global (ms)',
       data: [],
-      borderColor: '#818cf8',
+      borderColor: '#5b7fd6',
       borderWidth: 2.5,
       backgroundColor: latencyGrad,
       fill: true,
       tension: 0.35,
       pointRadius: 3,
-      pointBackgroundColor: '#818cf8',
+      pointBackgroundColor: '#5b7fd6',
     }]
   },
   options: {
@@ -933,17 +921,17 @@ const latencyChart = new Chart(latencyCtx, {
       y: {
         beginAtZero: true,
         suggestedMax: 350,
-        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-        ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 11 } }
+        grid: { color: 'rgba(20, 20, 18, 0.06)' },
+        ticks: { color: '#96938a', font: { family: 'Space Mono', size: 11 } }
       },
       x: {
         grid: { display: false },
-        ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } }
+        ticks: { color: '#96938a', font: { family: 'Space Mono', size: 10 } }
       }
     },
     plugins: {
       legend: { display: false },
-      tooltip: { backgroundColor: '#0c1222', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1 }
+      tooltip: { backgroundColor: '#1c1b18', borderColor: 'rgba(255,255,255,0.12)', borderWidth: 1 }
     }
   },
   plugins: [thresholdPlugin]
@@ -1009,19 +997,19 @@ function rebuildChart2() {
           x: {
             beginAtZero: true,
             suggestedMax: 350,
-            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-            ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } }
+            grid: { color: 'rgba(20, 20, 18, 0.06)' },
+            ticks: { color: '#96938a', font: { family: 'Space Mono', size: 10 } }
           },
           y: {
             grid: { display: false },
-            ticks: { color: '#f8fafc', font: { family: 'Outfit', size: 11, weight: 600 } }
+            ticks: { color: '#1c1b18', font: { family: 'Plus Jakarta Sans', size: 11, weight: 600 } }
           }
         },
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#0c1222',
-            borderColor: 'rgba(255,255,255,0.1)',
+            backgroundColor: '#1c1b18',
+            borderColor: 'rgba(255,255,255,0.12)',
             borderWidth: 1,
             callbacks: {
               label: (ctx) => `${ctx.raw} ms (${ctx.raw > 300 ? 'ALERTA > 300ms' : 'Normal'})`
@@ -1035,15 +1023,15 @@ function rebuildChart2() {
     // Modo Multilínea Temporal
     const isGh = currentSource === 'github';
     const seriesDefs = isGh ? [
-      { key: 'git-operations', label: 'Git Operations', color: '#818cf8' },
-      { key: 'api-requests', label: 'API Requests', color: '#34d399' },
-      { key: 'actions', label: 'Actions', color: '#fbbf24' },
-      { key: 'webhooks', label: 'Webhooks', color: '#22d3ee' }
+      { key: 'git-operations', label: 'Git Operations', color: '#5b7fd6' },
+      { key: 'api-requests', label: 'API Requests', color: '#2f9e6e' },
+      { key: 'actions', label: 'Actions', color: '#c98a1f' },
+      { key: 'webhooks', label: 'Webhooks', color: '#2f9e6e' }
     ] : [
-      { key: 'api', label: 'api', color: '#818cf8' },
-      { key: 'database', label: 'database', color: '#34d399' },
-      { key: 'payments', label: 'payments', color: '#fbbf24' },
-      { key: 'frontend', label: 'frontend', color: '#22d3ee' }
+      { key: 'api', label: 'api', color: '#5b7fd6' },
+      { key: 'database', label: 'database', color: '#2f9e6e' },
+      { key: 'payments', label: 'payments', color: '#c98a1f' },
+      { key: 'frontend', label: 'frontend', color: '#2f9e6e' }
     ];
 
     const datasets = seriesDefs.map(s => ({
@@ -1071,21 +1059,21 @@ function rebuildChart2() {
           y: {
             beginAtZero: false,
             suggestedMax: 350,
-            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-            ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 11 } }
+            grid: { color: 'rgba(20, 20, 18, 0.06)' },
+            ticks: { color: '#96938a', font: { family: 'Space Mono', size: 11 } }
           },
           x: {
             grid: { display: false },
-            ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } }
+            ticks: { color: '#96938a', font: { family: 'Space Mono', size: 10 } }
           }
         },
         plugins: {
           legend: {
             display: true,
             position: 'top',
-            labels: { color: '#94a3b8', boxWidth: 10, font: { family: 'Outfit', size: 11, weight: 600 } }
+            labels: { color: '#6f6d66', boxWidth: 10, font: { family: 'Plus Jakarta Sans', size: 11, weight: 600 } }
           },
-          tooltip: { backgroundColor: '#0c1222', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1 }
+          tooltip: { backgroundColor: '#1c1b18', borderColor: 'rgba(255,255,255,0.12)', borderWidth: 1 }
         }
       }
     });
@@ -1106,9 +1094,9 @@ function updateChart2Bars() {
     compChart.data.labels = items.map(i => i.name);
     compChart.data.datasets[0].data = items.map(i => i.lat);
     compChart.data.datasets[0].backgroundColor = items.map(i => {
-      if (i.lat > 300 || i.status === 'CRITICAL') return '#f43f5e';
-      if (i.lat > 200 || i.status === 'WARNING') return '#f59e0b';
-      return '#10b981';
+      if (i.lat > 300 || i.status === 'CRITICAL') return '#d1495b';
+      if (i.lat > 200 || i.status === 'WARNING') return '#c98a1f';
+      return '#2f9e6e';
     });
     compChart.update();
   }
@@ -1126,13 +1114,13 @@ function renderMetrics(m) {
   const slaBadge = document.getElementById('slaStatusBadge');
   if (m.avg_latency_ms > 300) {
     slaBadge.className = 'sla-pill crit';
-    slaBadge.textContent = '🔴 Alerta SLA Excedido (> 300ms)';
+    slaBadge.textContent = 'Alerta SLA Excedido (> 300ms)';
   } else if (m.avg_latency_ms > 200) {
     slaBadge.className = 'sla-pill warn';
-    slaBadge.textContent = '🟡 Latencia Moderada (200-300ms)';
+    slaBadge.textContent = 'Latencia Moderada (200-300ms)';
   } else {
     slaBadge.className = 'sla-pill ok';
-    slaBadge.textContent = '🟢 SLA Óptimo (< 200ms)';
+    slaBadge.textContent = 'SLA Óptimo (< 200ms)';
   }
 
   const col3Label = document.getElementById('kpiMetric3Label');
@@ -1263,8 +1251,8 @@ function renderState() {
     let footerTags = '';
     if (isGitHub) {
       footerTags = `
-        <span class="svc-tag">🌐 HTTP RTT</span>
-        <span class="svc-tag" style="color:#34d399">100% Operacional</span>
+        <span class="svc-tag">HTTP RTT</span>
+        <span class="svc-tag" style="color:#2f9e6e">100% Operacional</span>
       `;
     } else {
       footerTags = `
@@ -1299,7 +1287,7 @@ function renderState() {
       tr.innerHTML = `
         <td><strong>${displayName}</strong> <span style="font-size:10px;color:var(--text-sub)">[${s.entity_id}]</span></td>
         <td class="mono"><strong>${lat} ms</strong></td>
-        <td style="color:#34d399;font-size:12px;font-weight:600;">100% Operacional</td>
+        <td style="color:#2f9e6e;font-size:12px;font-weight:600;">100% Operacional</td>
         <td><span class="badge ${status}">${status}</span></td>
       `;
     } else {
@@ -1343,7 +1331,7 @@ function checkEmptyAlerts() {
   if (!container.querySelector('.alert-card')) {
     container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-icon-halo">🛡️</div>
+        <div class="empty-icon-halo"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
         <div style="font-weight:600;color:#fff;font-size:14px;">Ecosistema Estable</div>
         <div style="font-size:12px;max-width:280px;line-height:1.5;">Todos los servicios se encuentran operando dentro de los parámetros normales de Redis.</div>
       </div>`;
@@ -1358,7 +1346,8 @@ function renderAlert(a, prepend=true) {
 
   const div = document.createElement('div');
   div.className = `alert-card ${a.severity}`;
-  const icon = a.severity === 'CRITICAL' ? '🚨' : '⚠️';
+  const iconColor = a.severity === 'CRITICAL' ? '#a4243b' : '#7a5c14';
+  const icon = `<svg class="icon" viewBox="0 0 24 24" style="width:13px;height:13px;stroke:${iconColor}"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/></svg>`;
   div.innerHTML = `
     <div class="alert-header">
       <div class="alert-type">${icon} ${a.type} <span style="font-size:10px;color:var(--text-sub);font-weight:400">[${a.service || 'system'}]</span></div>
