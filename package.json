@@ -1,0 +1,20 @@
+{
+  "name": "grupo3-monitoreo-aplicaciones",
+  "version": "1.0.0",
+  "description": "Sistema de monitoreo de aplicaciones y servicios en tiempo real con Redis (Grupo 3)",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "publisher": "node publisher/publisher.js",
+    "processor": "node processor/processor.js",
+    "dev": "concurrently \"npm:publisher\" \"npm:processor\" \"npm:start\""
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ioredis": "^5.4.1",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
